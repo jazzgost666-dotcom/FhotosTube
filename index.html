@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InstaAnon - Oficial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { max-width: 500px; margin: 0 auto; background: #fff; height: 100vh; overflow-x: hidden; }
+        .page { display: none; height: 100%; flex-direction: column; }
+        .page.active { display: flex; }
+        .avatar-circle { width: 120px; height: 120px; border-radius: 60px; border: 4px solid #f09433; object-fit: cover; }
+        .post-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #000; }
+    </style>
+</head>
+<body>
+
+    <div id="setupPage" class="page active items-center justify-center p-8">
+        <div class="relative mb-6">
+            <img id="previewPic" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="avatar-circle">
+            <input type="file" id="profilePicFile" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
+            <div class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-2 border-2 border-white">
+                <i class="fa-solid fa-camera text-xs"></i>
+            </div>
+        </div>
+        <input type="text" id="userNick" placeholder="Escolha seu nick..." class="w-full border-b-2 border-gray-300 p-2 text-center text-2xl outline-none focus:border-pink-500 mb-8">
+        <button onclick="iniciarApp()" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white w-full py-4 rounded-xl font-bold text-lg shadow-xl active:scale-95 transition">COMEÇAR</button>
+        <p class="text-gray-400 text-xs mt-4">Clique na foto para mudar o avatar</p>
+    </div>
+
+    <div id="feedPage" class="page">
+        <header class="p-4 border-b flex justify-between items-center sticky top-0 bg-white z-50">
+            <span class="text-2xl font-bold italic bg-gradient-to-r from-yellow-500 via-red-500 to-purple-500 bg-clip-text text-transparent">Instagram</span>
+            <i class="fa-regular fa-paper-plane text-xl"></i>
+        </header>
+        <div id="feedList" class="flex-1 overflow-y-auto pb-20">
+            </div>
+    </div>
+
+    <div id="uploadPage" class="page p-6">
+        <h2 class="text-xl font-bold mb-6">Criar Publicação</h2>
+        <div class="border-2 border-dashed border-gray-300 rounded-2xl p-10 text-center mb-4 relative bg-gray-50">
+            <i class="fa-solid fa-cloud-arrow-up text-4xl text-gray-300 mb-2"></i>
+            <p id="fileName" class="text-gray-400 text-sm">Selecione Foto, GIF ou Vídeo</p>
+            <input type="file" id="postFile" accept="image/*,video/*" class="absolute inset-0 opacity-0 cursor-pointer">
+        </div>
+        <textarea id="postCap" placeholder="Escreva uma legenda..." class="w-full border p-4 rounded-xl h-32 mb-4 outline-none focus:ring-2 focus:ring-pink-500"></textarea>
+        <button onclick="postarConteudo()" id="btnPost" class="bg-blue-500 text-white w-full py-4 rounded-xl font-bold text-lg">PUBLICAR</button>
+    </div>
+
+    <div id="profilePage" class="page">
+        <header class="p-4 border-b flex justify-between items-center">
+            <span class="font-bold text-lg" id="pNickHead">Perfil</span>
+            <i class="fa-solid fa-gear text-xl"></i>
+        </header>
+        <div class="p-6">
+            <div class="flex items-center gap-6 mb-8">
+                <img id="pPic" src="" class="w-20 h-20 rounded-full border-2 p-1 object-cover">
+                <div class="flex flex-1 justify-around text-center">
+                    <div><p class="font-bold text-lg" id="pPostCount">0</p><p class="text-xs text-gray-500">Posts</p></div>
+                    <div><p class="font-bold text-lg">0</p><p class="text-xs text-gray-500">Seguidores</p></div>
+                    <div><p class="font-bold text-lg" id="pLikes">0</p><p class="text-xs text-gray-500">Likes</p></div>
+                </div>
+            </div>
+            <h2 id="pNick" class="font-bold mb-4"></h2>
+            <button onclick="window.location.reload()" class="w-full bg-gray-100 py-2 rounded-lg font-bold text-sm">Sair / Trocar Nick</button>
+        </div>
+    </div>
+
+    <nav id="navBar" class="hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-4 max-w-[500px] mx-auto z-50">
+        <i class="fa-solid fa-house text-2xl cursor-pointer" onclick="showTab('feedPage')"></i>
+        <i class="fa-solid fa-square-plus text-2xl cursor-pointer text-pink-500" onclick="showTab('uploadPage')"></i>
+        <i class="fa-solid fa-user text-2xl cursor-pointer" onclick="showTab('profilePage')"></i>
+    </nav>
+
+    <script type="module">
+        // --- LOGICA DE FUNCIONAMENTO ---
+        let user = { nick: "", pic: "https://cdn-icons-png.flaticon.com/512/149/149071.png", likes: 0, posts: 0 };
+        let postsDB = JSON.parse(localStorage.getItem('posts_local')) || [];
+
+        // Trocar Abas
+        window.showTab = (id) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if(id === 'profilePage') renderProfile();
+        };
+
+        // Preview da foto de perfil
+        document.getElementById('profilePicFile').onchange = e => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                document.getElementById('previewPic').src = reader.result;
+                user.pic = reader.result;
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        };
+
+        // Mostrar nome do arquivo no upload
+        document.getElementById('postFile').onchange = e => {
+            document.getElementById('fileName').innerText = e.target.files[0].name;
+        };
+
+        // FUNÇÃO COMEÇAR
+        window.iniciarApp = () => {
+            const nick = document.getElementById('userNick').value;
+            if(!nick) return alert("Por favor, digite um Nick para começar!");
+            user.nick = nick;
+            document.getElementById('navBar').classList.remove('hidden');
+            showTab('feedPage');
+            renderFeed();
+        };
+
+        // FUNÇÃO POSTAR
+        window.postarConteudo = () => {
+            const file = document.getElementById('postFile').files[0];
+            const cap = document.getElementById('postCap').value;
+            if(!file) return alert("Selecione uma imagem ou vídeo!");
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                const newPost = {
+                    id: Date.now(),
+                    nick: user.nick,
+                    userPic: user.pic,
+                    content: reader.result,
+                    type: file.type.includes('video') ? 'video' : 'photo',
+                    caption: cap,
+                    likes: 0
+                };
+                postsDB.unshift(newPost);
+                localStorage.setItem('posts_local', JSON.stringify(postsDB));
+                user.posts++;
+                
+                alert("Publicado!");
+                document.getElementById('postCap').value = "";
+                document.getElementById('fileName').innerText = "Selecione Foto, GIF ou Vídeo";
+                showTab('feedPage');
+                renderFeed();
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // RENDERIZAR FEED
+        function renderFeed() {
+            const list = document.getElementById('feedList');
+            list.innerHTML = postsDB.map(p => `
+                <div class="bg-white border-b mb-4">
+                    <div class="p-3 flex items-center gap-2">
+                        <img src="${p.userPic}" class="w-8 h-8 rounded-full border">
+                        <span class="font-bold text-sm">${p.nick}</span>
+                    </div>
+                    ${p.type === 'video' ? `<video src="${p.content}" class="w-full" controls></video>` : `<img src="${p.content}" class="post-img">`}
+                    <div class="p-3">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i class="fa-solid fa-heart text-red-500"></i>
+                            <span class="font-bold text-sm">${p.likes} likes</span>
+                        </div>
+                        <p class="text-sm"><span class="font-bold">${p.nick}</span> ${p.caption}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // RENDERIZAR PERFIL
+        function renderProfile() {
+            document.getElementById('pNick').innerText = user.nick;
+            document.getElementById('pNickHead').innerText = user.nick;
+            document.getElementById('pPic').src = user.pic;
+            document.getElementById('pPostCount').innerText = user.posts;
+            document.getElementById('pLikes').innerText = user.likes;
+        }
+
+    </script>
+</body>
+</html>
