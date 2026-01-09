@@ -3,16 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FhotosTube</title>
+    <title>FhotosTube PRO</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background: #fafafa; display: flex; justify-content: center; min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
-        .mobile-container { width: 100%; max-width: 450px; background: #fff; min-height: 100vh; position: relative; border-left: 1px solid #eee; border-right: 1px solid #eee; display: flex; flex-direction: column; }
-        .page { display: none; flex-direction: column; flex: 1; width: 100%; text-align: center; }
+        body { background: #000; display: flex; justify-content: center; min-height: 100vh; font-family: sans-serif; overflow-x: hidden; }
+        .mobile-container { width: 100%; max-width: 450px; background: #fff; min-height: 100vh; position: relative; display: flex; flex-direction: column; }
+        .page { display: none; flex-direction: column; flex: 1; width: 100%; }
         .page.active { display: flex; }
-        .post-media { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #000; }
-        .avatar-circle { width: 130px; height: 130px; border-radius: 50%; border: 4px solid #3b82f6; object-fit: cover; margin: 0 auto; }
+        .post-media { width: 100%; max-height: 80vh; object-fit: contain; background: #000; cursor: pointer; }
+        
+        /* Grid estilo TikTok/Instagram no Perfil */
+        .profile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; }
+        .grid-item { aspect-ratio: 1/1; position: relative; overflow: hidden; cursor: pointer; background: #eee; }
+        .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; }
+        .grid-item .icon { position: absolute; top: 5px; right: 5px; color: white; text-shadow: 0 0 3px black; }
+
+        /* Modal de Zoom */
+        #zoomModal { display: none; position: fixed; inset: 0; background: black; z-index: 100; justify-content: center; align-items: center; }
+        
+        .avatar-main { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #3b82f6; }
         .hide-scroll::-webkit-scrollbar { display: none; }
     </style>
 </head>
@@ -21,58 +31,71 @@
 <div class="mobile-container">
     
     <div id="setupPage" class="page active items-center justify-center p-8">
-        <h1 class="text-4xl font-extrabold mb-10 text-blue-600 italic">FhotosTube</h1>
+        <h1 class="text-5xl font-black mb-10 text-blue-600 italic">FhotosTube</h1>
         <div class="relative mb-8 cursor-pointer" onclick="document.getElementById('profilePicFile').click()">
-            <img id="previewPic" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="avatar-circle">
-            <div class="absolute bottom-2 right-2 bg-blue-500 text-white rounded-full p-2 border-4 border-white">
-                <i class="fa-solid fa-plus"></i>
-            </div>
+            <img id="previewPic" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-32 h-32 rounded-full object-cover border-4 border-blue-500">
             <input type="file" id="profilePicFile" accept="image/*" class="hidden">
         </div>
-        <input type="text" id="userNick" placeholder="Escolha seu nick..." class="w-full border-b-2 border-gray-200 p-3 text-center text-2xl outline-none focus:border-blue-500 mb-10">
-        <button onclick="iniciarApp()" class="bg-blue-600 text-white w-full py-4 rounded-2xl font-bold text-xl shadow-lg hover:bg-blue-700 transition">ENTRAR NO CANAL</button>
+        <input type="text" id="userNick" placeholder="Seu Nick..." class="w-full border-b-2 p-3 text-center text-2xl outline-none mb-10">
+        <button onclick="iniciarApp()" class="bg-blue-600 text-white w-full py-4 rounded-2xl font-bold text-xl">ENTRAR</button>
     </div>
 
     <div id="feedPage" class="page">
         <header class="p-4 border-b flex justify-between items-center sticky top-0 bg-white z-50">
             <span class="text-2xl font-black italic text-blue-600">FhotosTube</span>
-            <i class="fa-solid fa-bolt text-xl text-yellow-500"></i>
+            <div class="flex gap-4">
+                <i class="fa-solid fa-user-group text-xl text-gray-600" onclick="showTab('friendsPage')"></i>
+                <i class="fa-solid fa-heart text-xl text-red-500"></i>
+            </div>
         </header>
         <div id="feedList" class="flex-1 overflow-y-auto pb-24 hide-scroll"></div>
     </div>
 
     <div id="uploadPage" class="page p-6 items-center">
-        <h2 class="text-2xl font-bold mb-8">Novo Post (Max 60s)</h2>
-        <div class="w-full border-4 border-dashed border-gray-200 rounded-3xl p-12 text-center mb-6 bg-gray-50 relative cursor-pointer" onclick="document.getElementById('postFile').click()">
-            <i class="fa-solid fa-clapperboard text-5xl text-blue-300 mb-4"></i>
-            <p id="fileName" class="text-gray-500 font-medium text-sm">Toque para selecionar</p>
+        <h2 class="text-2xl font-bold mb-8">Novo Post</h2>
+        <div class="w-full border-4 border-dashed rounded-3xl p-12 text-center mb-6 bg-gray-50 relative cursor-pointer" onclick="document.getElementById('postFile').click()">
+            <i class="fa-solid fa-video text-5xl text-blue-400 mb-4"></i>
+            <p id="fileName">Selecione Foto ou Vídeo (Até 30min)</p>
             <input type="file" id="postFile" accept="image/*,video/*" class="hidden">
         </div>
-        <textarea id="postCap" placeholder="O que você está pensando?" class="w-full border-2 border-gray-100 p-4 rounded-2xl h-32 mb-6 outline-none focus:border-blue-500 text-lg"></textarea>
-        <button id="btnPost" onclick="postarConteudo()" class="bg-blue-600 text-white w-full py-4 rounded-2xl font-bold text-xl active:scale-95">PUBLICAR AGORA</button>
+        <textarea id="postCap" placeholder="Legenda..." class="w-full border p-4 rounded-2xl h-24 mb-6 outline-none text-lg"></textarea>
+        <button id="btnPost" onclick="postarConteudo()" class="bg-blue-600 text-white w-full py-4 rounded-2xl font-bold text-xl">PUBLICAR</button>
     </div>
 
-    <div id="profilePage" class="page p-6 items-center">
-        <div class="w-full flex flex-col items-center">
-            <img id="pPic" src="" class="avatar-circle mb-4 border-gray-200">
-            <h2 id="pNick" class="text-2xl font-bold mb-8"></h2>
-            
-            <div class="grid grid-cols-3 w-full border-y py-6 mb-10 text-center">
-                <div><p class="font-bold text-xl" id="pPostCount">0</p><p class="text-xs text-gray-400 uppercase">Posts</p></div>
-                <div><p class="font-bold text-xl" id="pLikes">0</p><p class="text-xs text-gray-400 uppercase">Curtidas</p></div>
-                <div><p class="font-bold text-xl">0</p><p class="text-xs text-gray-400 uppercase">Amigos</p></div>
+    <div id="profilePage" class="page">
+        <header class="p-4 border-b flex justify-between items-center">
+            <span class="font-bold">Meu Canal</span>
+            <i class="fa-solid fa-bars"></i>
+        </header>
+        <div class="p-6 flex flex-col items-center">
+            <img id="pPic" src="" class="avatar-main mb-4">
+            <h2 id="pNick" class="text-xl font-bold mb-6"></h2>
+            <div class="flex justify-around w-full mb-8 text-center">
+                <div><p class="font-bold" id="pPostCount">0</p><p class="text-xs text-gray-500">Posts</p></div>
+                <div><p class="font-bold" id="pLikesCount">0</p><p class="text-xs text-gray-500">Curtidas</p></div>
+                <div><p class="font-bold">0</p><p class="text-xs text-gray-500">Amigos</p></div>
             </div>
-            
-            <button onclick="window.location.reload()" class="w-full bg-red-50 text-red-500 py-4 rounded-2xl font-bold">SAIR DO CANAL</button>
         </div>
+        <div id="profileGrid" class="profile-grid"></div>
     </div>
 
-    <nav id="navBar" class="hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[450px] bg-white border-t flex justify-around p-5 z-50 shadow-2xl">
-        <i class="fa-solid fa-house text-2xl cursor-pointer" onclick="showTab('feedPage')"></i>
-        <i class="fa-solid fa-circle-plus text-3xl text-blue-600 cursor-pointer" onclick="showTab('uploadPage')"></i>
-        <i class="fa-solid fa-user text-2xl cursor-pointer" onclick="showTab('profilePage')"></i>
+    <div id="friendsPage" class="page p-6">
+        <h2 class="text-2xl font-bold mb-6 text-center">Encontrar Amigos</h2>
+        <div id="userSuggestions" class="space-y-4">
+            </div>
+    </div>
+
+    <nav id="navBar" class="hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[450px] bg-white border-t flex justify-around p-5 z-50">
+        <i class="fa-solid fa-house text-2xl" onclick="showTab('feedPage')"></i>
+        <i class="fa-solid fa-square-plus text-3xl text-blue-600" onclick="showTab('uploadPage')"></i>
+        <i class="fa-solid fa-circle-user text-2xl" onclick="showTab('profilePage')"></i>
     </nav>
 
+</div>
+
+<div id="zoomModal" onclick="this.style.display='none'">
+    <button class="absolute top-10 right-10 text-white text-4xl">&times;</button>
+    <div id="zoomContent" class="w-full max-w-lg p-4 flex justify-center"></div>
 </div>
 
 <script>
@@ -83,146 +106,132 @@
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(id).classList.add('active');
         if(id === 'profilePage') renderProfile();
-        window.scrollTo(0,0);
+        if(id === 'friendsPage') renderFriends();
     }
 
-    document.getElementById('profilePicFile').onchange = e => {
-        const file = e.target.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-            document.getElementById('previewPic').src = reader.result;
-            user.pic = reader.result;
-        };
-        reader.readAsDataURL(file);
-    };
-
+    // COMEÇAR
     function iniciarApp() {
         const nick = document.getElementById('userNick').value;
-        if(!nick) return alert("Digite seu Nick!");
+        if(!nick) return alert("Bota um nick!");
         user.nick = nick;
         document.getElementById('navBar').classList.remove('hidden');
         showTab('feedPage');
         renderFeed();
     }
 
+    // ZOOM / MAXIMIZAR
+    function maximizar(url, type) {
+        const modal = document.getElementById('zoomModal');
+        const content = document.getElementById('zoomContent');
+        modal.style.display = 'flex';
+        content.innerHTML = type === 'video' 
+            ? `<video src="${url}" controls autoplay class="max-w-full max-h-[80vh]"></video>`
+            : `<img src="${url}" class="max-w-full max-h-[80vh] object-contain">`;
+    }
+
+    // POSTAR (SUPORTE PARA VÍDEOS LONGOS)
     function postarConteudo() {
         const file = document.getElementById('postFile').files[0];
         const cap = document.getElementById('postCap').value;
         const btn = document.getElementById('btnPost');
 
-        if(!file) return alert("Selecione um arquivo!");
-
-        btn.innerText = "Processando...";
+        if(!file) return alert("Cadê o arquivo?");
+        
+        btn.innerText = "Carregando... (Pode demorar)";
         btn.disabled = true;
 
-        if(file.type.includes('video')) {
-            const video = document.createElement('video');
-            video.preload = 'metadata';
-            video.onloadedmetadata = function() {
-                window.URL.revokeObjectURL(video.src);
-                if (video.duration > 61) {
-                    alert("Vídeo muito longo! Máximo: 60 segundos.");
-                    btn.innerText = "PUBLICAR AGORA";
-                    btn.disabled = false;
-                } else {
-                    finalizarPost(file, cap, 'video');
-                }
-            }
-            video.src = URL.createObjectURL(file);
-        } else {
-            finalizarPost(file, cap, 'photo');
-        }
-    }
-
-    function finalizarPost(file, cap, type) {
         const reader = new FileReader();
         reader.onload = () => {
+            const newPost = {
+                id: Date.now(),
+                nick: user.nick,
+                userPic: user.pic,
+                content: reader.result,
+                type: file.type.includes('video') ? 'video' : 'photo',
+                caption: cap,
+                likes: Math.floor(Math.random() * 10),
+                comments: []
+            };
+            postsDB.unshift(newPost);
             try {
-                const newPost = {
-                    id: Date.now(),
-                    nick: user.nick,
-                    userPic: user.pic,
-                    content: reader.result,
-                    type: type,
-                    caption: cap,
-                    likes: 0,
-                    comments: []
-                };
-                postsDB.unshift(newPost);
                 localStorage.setItem('fhotostube_db', JSON.stringify(postsDB));
                 user.posts++;
-                
-                alert("Publicado!");
-                document.getElementById('postCap').value = "";
-                document.getElementById('postFile').value = "";
-                document.getElementById('fileName').innerText = "Toque para selecionar";
-                document.getElementById('btnPost').innerText = "PUBLICAR AGORA";
-                document.getElementById('btnPost').disabled = false;
-                
+                alert("Postado!");
                 showTab('feedPage');
                 renderFeed();
             } catch(e) {
-                alert("Erro: O arquivo é muito grande para o navegador. Tente uma foto menor ou um vídeo mais curto.");
-                document.getElementById('btnPost').innerText = "PUBLICAR AGORA";
-                document.getElementById('btnPost').disabled = false;
+                alert("AVISO: O vídeo é muito longo para o armazenamento local. Ele vai aparecer agora, mas pode sumir se você atualizar a página sem usar o Firebase!");
+                renderFeed();
             }
+            btn.innerText = "PUBLICAR";
+            btn.disabled = false;
         };
         reader.readAsDataURL(file);
     }
 
-    window.addComment = (postId) => {
-        const input = document.getElementById(`cmnt-${postId}`);
-        if(!input.value) return;
-        const post = postsDB.find(p => p.id === postId);
-        post.comments.push({ nick: user.nick, text: input.value });
-        localStorage.setItem('fhotostube_db', JSON.stringify(postsDB));
-        input.value = "";
-        renderFeed();
-    };
-
+    // FEED HOME
     function renderFeed() {
         const list = document.getElementById('feedList');
-        if(postsDB.length === 0) {
-            list.innerHTML = `<p class="mt-20 text-gray-400">Nenhum post ainda. Seja o primeiro!</p>`;
-            return;
-        }
         list.innerHTML = postsDB.map(p => `
-            <div class="bg-white border-b-8 border-gray-50 text-left">
-                <div class="p-4 flex items-center gap-3">
-                    <img src="${p.userPic}" class="w-10 h-10 rounded-full object-cover">
-                    <span class="font-bold text-sm text-gray-800">${p.nick}</span>
+            <div class="bg-white border-b-4 border-gray-100 mb-2">
+                <div class="p-3 flex items-center gap-2">
+                    <img src="${p.userPic}" class="w-8 h-8 rounded-full">
+                    <span class="font-bold text-sm">${p.nick}</span>
                 </div>
-                ${p.type === 'video' ? `<video src="${p.content}" class="post-media" controls></video>` : `<img src="${p.content}" class="post-media">`}
+                <div onclick="maximizar('${p.content}', '${p.type}')">
+                    ${p.type === 'video' ? `<video src="${p.content}" class="post-media"></video>` : `<img src="${p.content}" class="post-media">`}
+                </div>
                 <div class="p-4">
-                    <div class="flex gap-4 mb-3">
-                        <i class="fa-solid fa-heart text-2xl text-red-500"></i>
-                        <i class="fa-regular fa-comment text-2xl"></i>
+                    <div class="flex gap-4 mb-2 items-center">
+                        <i class="fa-solid fa-heart text-red-500 text-xl"></i>
+                        <span class="font-bold text-sm">${p.likes} curtidas</span>
                     </div>
-                    <p class="text-sm mb-3 text-gray-700"><b>${p.nick}</b> ${p.caption}</p>
-                    <div class="bg-gray-50 rounded-xl p-3 mb-3 max-h-32 overflow-y-auto">
-                        ${p.comments.map(c => `<p class="text-xs mb-1"><b>${c.nick}</b> ${c.text}</p>`).join('')}
-                    </div>
-                    <div class="flex gap-2">
-                        <input id="cmnt-${p.id}" type="text" placeholder="Comentar..." class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-xs outline-none">
-                        <button onclick="addComment(${p.id})" class="text-blue-600 font-bold text-xs">OK</button>
-                    </div>
+                    <p class="text-sm"><b>${p.nick}</b> ${p.caption}</p>
                 </div>
             </div>
         `).join('');
     }
 
+    // PERFIL ESTILO TIKTOK
     function renderProfile() {
         document.getElementById('pNick').innerText = user.nick;
         document.getElementById('pPic').src = user.pic;
         document.getElementById('pPostCount').innerText = user.posts;
-        document.getElementById('pLikes').innerText = user.likes;
+        
+        const grid = document.getElementById('profileGrid');
+        const myPosts = postsDB.filter(p => p.nick === user.nick);
+        grid.innerHTML = myPosts.map(p => `
+            <div class="grid-item" onclick="maximizar('${p.content}', '${p.type}')">
+                ${p.type === 'video' ? `<video src="${p.content}"></video><i class="fa-solid fa-play icon"></i>` : `<img src="${p.content}">`}
+            </div>
+        `).join('');
     }
 
+    // SISTEMA DE AMIGOS
+    function renderFriends() {
+        const area = document.getElementById('userSuggestions');
+        // Simulação de usuários online
+        const names = ["Felipe_Gamer", "Julia_Vlog", "Marcos_Tube", "Rick_Gifs"];
+        area.innerHTML = names.map(n => `
+            <div class="flex items-center justify-between bg-gray-50 p-4 rounded-2xl">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center font-bold text-blue-600">${n[0]}</div>
+                    <span class="font-bold">${n}</span>
+                </div>
+                <button class="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-bold">Seguir</button>
+            </div>
+        `).join('');
+    }
+
+    document.getElementById('profilePicFile').onchange = e => {
+        const reader = new FileReader();
+        reader.onload = () => { document.getElementById('previewPic').src = reader.result; user.pic = reader.result; };
+        reader.readAsDataURL(e.target.files[0]);
+    };
+    
     document.getElementById('postFile').onchange = e => {
         if(e.target.files[0]) document.getElementById('fileName').innerText = e.target.files[0].name;
     };
 </script>
-
 </body>
 </html>
