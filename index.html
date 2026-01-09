@@ -45,11 +45,11 @@
         <h2 class="text-2xl font-bold mb-8">Novo Post (Max 60s)</h2>
         <div class="w-full border-4 border-dashed border-gray-200 rounded-3xl p-12 text-center mb-6 bg-gray-50 relative cursor-pointer" onclick="document.getElementById('postFile').click()">
             <i class="fa-solid fa-clapperboard text-5xl text-blue-300 mb-4"></i>
-            <p id="fileName" class="text-gray-500 font-medium">Toque para selecionar</p>
+            <p id="fileName" class="text-gray-500 font-medium text-sm">Toque para selecionar</p>
             <input type="file" id="postFile" accept="image/*,video/*" class="hidden">
         </div>
         <textarea id="postCap" placeholder="O que você está pensando?" class="w-full border-2 border-gray-100 p-4 rounded-2xl h-32 mb-6 outline-none focus:border-blue-500 text-lg"></textarea>
-        <button id="btnPost" onclick="postarConteudo()" class="bg-blue-600 text-white w-full py-4 rounded-2xl font-bold text-xl">PUBLICAR AGORA</button>
+        <button id="btnPost" onclick="postarConteudo()" class="bg-blue-600 text-white w-full py-4 rounded-2xl font-bold text-xl active:scale-95">PUBLICAR AGORA</button>
     </div>
 
     <div id="profilePage" class="page p-6 items-center">
@@ -68,9 +68,9 @@
     </div>
 
     <nav id="navBar" class="hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[450px] bg-white border-t flex justify-around p-5 z-50 shadow-2xl">
-        <i class="fa-solid fa-house text-2xl" onclick="showTab('feedPage')"></i>
-        <i class="fa-solid fa-circle-plus text-3xl text-blue-600" onclick="showTab('uploadPage')"></i>
-        <i class="fa-solid fa-user text-2xl" onclick="showTab('profilePage')"></i>
+        <i class="fa-solid fa-house text-2xl cursor-pointer" onclick="showTab('feedPage')"></i>
+        <i class="fa-solid fa-circle-plus text-3xl text-blue-600 cursor-pointer" onclick="showTab('uploadPage')"></i>
+        <i class="fa-solid fa-user text-2xl cursor-pointer" onclick="showTab('profilePage')"></i>
     </nav>
 
 </div>
@@ -79,7 +79,6 @@
     let user = { nick: "", pic: "https://cdn-icons-png.flaticon.com/512/149/149071.png", likes: 0, posts: 0 };
     let postsDB = JSON.parse(localStorage.getItem('fhotostube_db')) || [];
 
-    // NAVEGAÇÃO
     function showTab(id) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(id).classList.add('active');
@@ -87,17 +86,17 @@
         window.scrollTo(0,0);
     }
 
-    // PREVIEW DO AVATAR
     document.getElementById('profilePicFile').onchange = e => {
+        const file = e.target.files[0];
+        if(!file) return;
         const reader = new FileReader();
         reader.onload = () => {
             document.getElementById('previewPic').src = reader.result;
             user.pic = reader.result;
         };
-        reader.readAsDataURL(e.target.files[0]);
+        reader.readAsDataURL(file);
     };
 
-    // INICIAR
     function iniciarApp() {
         const nick = document.getElementById('userNick').value;
         if(!nick) return alert("Digite seu Nick!");
@@ -107,59 +106,74 @@
         renderFeed();
     }
 
-    // POSTAR COM VALIDAÇÃO DE 60 SEGUNDOS
     function postarConteudo() {
         const file = document.getElementById('postFile').files[0];
         const cap = document.getElementById('postCap').value;
+        const btn = document.getElementById('btnPost');
+
         if(!file) return alert("Selecione um arquivo!");
 
-        const isVideo = file.type.includes('video');
+        btn.innerText = "Processando...";
+        btn.disabled = true;
 
-        if(isVideo) {
+        if(file.type.includes('video')) {
             const video = document.createElement('video');
             video.preload = 'metadata';
             video.onloadedmetadata = function() {
                 window.URL.revokeObjectURL(video.src);
                 if (video.duration > 61) {
-                    alert("Vídeo muito longo! Máximo permitido: 60 segundos.");
+                    alert("Vídeo muito longo! Máximo: 60 segundos.");
+                    btn.innerText = "PUBLICAR AGORA";
+                    btn.disabled = false;
                 } else {
-                    processarUpload(file, cap, 'video');
+                    finalizarPost(file, cap, 'video');
                 }
             }
             video.src = URL.createObjectURL(file);
         } else {
-            processarUpload(file, cap, 'photo');
+            finalizarPost(file, cap, 'photo');
         }
     }
 
-    function processarUpload(file, cap, type) {
+    function finalizarPost(file, cap, type) {
         const reader = new FileReader();
         reader.onload = () => {
-            const newPost = {
-                id: Date.now(),
-                nick: user.nick,
-                userPic: user.pic,
-                content: reader.result,
-                type: type,
-                caption: cap,
-                likes: 0,
-                comments: []
-            };
-            postsDB.unshift(newPost);
-            localStorage.setItem('fhotostube_db', JSON.stringify(postsDB));
-            user.posts++;
-            alert("Publicado com sucesso!");
-            showTab('feedPage');
-            renderFeed();
+            try {
+                const newPost = {
+                    id: Date.now(),
+                    nick: user.nick,
+                    userPic: user.pic,
+                    content: reader.result,
+                    type: type,
+                    caption: cap,
+                    likes: 0,
+                    comments: []
+                };
+                postsDB.unshift(newPost);
+                localStorage.setItem('fhotostube_db', JSON.stringify(postsDB));
+                user.posts++;
+                
+                alert("Publicado!");
+                document.getElementById('postCap').value = "";
+                document.getElementById('postFile').value = "";
+                document.getElementById('fileName').innerText = "Toque para selecionar";
+                document.getElementById('btnPost').innerText = "PUBLICAR AGORA";
+                document.getElementById('btnPost').disabled = false;
+                
+                showTab('feedPage');
+                renderFeed();
+            } catch(e) {
+                alert("Erro: O arquivo é muito grande para o navegador. Tente uma foto menor ou um vídeo mais curto.");
+                document.getElementById('btnPost').innerText = "PUBLICAR AGORA";
+                document.getElementById('btnPost').disabled = false;
+            }
         };
         reader.readAsDataURL(file);
     }
 
-    // COMENTAR
     window.addComment = (postId) => {
         const input = document.getElementById(`cmnt-${postId}`);
         if(!input.value) return;
-        
         const post = postsDB.find(p => p.id === postId);
         post.comments.push({ nick: user.nick, text: input.value });
         localStorage.setItem('fhotostube_db', JSON.stringify(postsDB));
@@ -167,9 +181,12 @@
         renderFeed();
     };
 
-    // RENDERIZAR FEED
     function renderFeed() {
         const list = document.getElementById('feedList');
+        if(postsDB.length === 0) {
+            list.innerHTML = `<p class="mt-20 text-gray-400">Nenhum post ainda. Seja o primeiro!</p>`;
+            return;
+        }
         list.innerHTML = postsDB.map(p => `
             <div class="bg-white border-b-8 border-gray-50 text-left">
                 <div class="p-4 flex items-center gap-3">
@@ -183,11 +200,9 @@
                         <i class="fa-regular fa-comment text-2xl"></i>
                     </div>
                     <p class="text-sm mb-3 text-gray-700"><b>${p.nick}</b> ${p.caption}</p>
-                    
-                    <div class="bg-gray-50 rounded-xl p-3 mb-3">
+                    <div class="bg-gray-50 rounded-xl p-3 mb-3 max-h-32 overflow-y-auto">
                         ${p.comments.map(c => `<p class="text-xs mb-1"><b>${c.nick}</b> ${c.text}</p>`).join('')}
                     </div>
-                    
                     <div class="flex gap-2">
                         <input id="cmnt-${p.id}" type="text" placeholder="Comentar..." class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-xs outline-none">
                         <button onclick="addComment(${p.id})" class="text-blue-600 font-bold text-xs">OK</button>
