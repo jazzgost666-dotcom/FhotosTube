@@ -3,174 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FhotosTube- Oficial</title>
+    <title>FhotosTube</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { max-width: 500px; margin: 0 auto; background: #fff; height: 100vh; overflow-x: hidden; }
-        .page { display: none; height: 100%; flex-direction: column; }
+        body { background: #fafafa; display: flex; justify-content: center; min-height: 100vh; font-family: 'Segoe UI', sans-serif; }
+        .mobile-container { width: 100%; max-width: 450px; background: #fff; min-height: 100vh; position: relative; border-left: 1px solid #eee; border-right: 1px solid #eee; display: flex; flex-direction: column; }
+        .page { display: none; flex-direction: column; flex: 1; width: 100%; text-align: center; }
         .page.active { display: flex; }
-        .avatar-circle { width: 120px; height: 120px; border-radius: 60px; border: 4px solid #f09433; object-fit: cover; }
-        .post-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #000; }
+        .post-media { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #000; }
+        .avatar-circle { width: 130px; height: 130px; border-radius: 50%; border: 4px solid #3b82f6; object-fit: cover; margin: 0 auto; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
 
+<div class="mobile-container">
+    
     <div id="setupPage" class="page active items-center justify-center p-8">
-        <div class="relative mb-6">
+        <h1 class="text-4xl font-extrabold mb-10 text-blue-600 italic">FhotosTube</h1>
+        <div class="relative mb-8 cursor-pointer" onclick="document.getElementById('profilePicFile').click()">
             <img id="previewPic" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="avatar-circle">
-            <input type="file" id="profilePicFile" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer">
-            <div class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-2 border-2 border-white">
-                <i class="fa-solid fa-camera text-xs"></i>
+            <div class="absolute bottom-2 right-2 bg-blue-500 text-white rounded-full p-2 border-4 border-white">
+                <i class="fa-solid fa-plus"></i>
             </div>
+            <input type="file" id="profilePicFile" accept="image/*" class="hidden">
         </div>
-        <input type="text" id="userNick" placeholder="Escolha seu nick..." class="w-full border-b-2 border-gray-300 p-2 text-center text-2xl outline-none focus:border-pink-500 mb-8">
-        <button onclick="iniciarApp()" class="bg-gradient-to-r from-purple-500 to-pink-500 text-white w-full py-4 rounded-xl font-bold text-lg shadow-xl active:scale-95 transition">COMEÇAR</button>
-        <p class="text-gray-400 text-xs mt-4">Clique na foto para mudar o avatar</p>
+        <input type="text" id="userNick" placeholder="Escolha seu nick..." class="w-full border-b-2 border-gray-200 p-3 text-center text-2xl outline-none focus:border-blue-500 mb-10">
+        <button onclick="iniciarApp()" class="bg-blue-600 text-white w-full py-4 rounded-2xl font-bold text-xl shadow-lg hover:bg-blue-700 transition">ENTRAR NO CANAL</button>
     </div>
 
     <div id="feedPage" class="page">
         <header class="p-4 border-b flex justify-between items-center sticky top-0 bg-white z-50">
-            <span class="text-2xl font-bold italic bg-gradient-to-r from-yellow-500 via-red-500 to-purple-500 bg-clip-text text-transparent">FhotosTube</span>
-            <i class="fa-regular fa-paper-plane text-xl"></i>
+            <span class="text-2xl font-black italic text-blue-600">FhotosTube</span>
+            <i class="fa-solid fa-bolt text-xl text-yellow-500"></i>
         </header>
-        <div id="feedList" class="flex-1 overflow-y-auto pb-20">
-            </div>
+        <div id="feedList" class="flex-1 overflow-y-auto pb-24 hide-scroll"></div>
     </div>
 
-    <div id="uploadPage" class="page p-6">
-        <h2 class="text-xl font-bold mb-6">Criar Publicação</h2>
-        <div class="border-2 border-dashed border-gray-300 rounded-2xl p-10 text-center mb-4 relative bg-gray-50">
-            <i class="fa-solid fa-cloud-arrow-up text-4xl text-gray-300 mb-2"></i>
-            <p id="fileName" class="text-gray-400 text-sm">Selecione Foto, GIF ou Vídeo</p>
-            <input type="file" id="postFile" accept="image/*,video/*" class="absolute inset-0 opacity-0 cursor-pointer">
+    <div id="uploadPage" class="page p-6 items-center">
+        <h2 class="text-2xl font-bold mb-8">Novo Post (Max 60s)</h2>
+        <div class="w-full border-4 border-dashed border-gray-200 rounded-3xl p-12 text-center mb-6 bg-gray-50 relative cursor-pointer" onclick="document.getElementById('postFile').click()">
+            <i class="fa-solid fa-clapperboard text-5xl text-blue-300 mb-4"></i>
+            <p id="fileName" class="text-gray-500 font-medium">Toque para selecionar</p>
+            <input type="file" id="postFile" accept="image/*,video/*" class="hidden">
         </div>
-        <textarea id="postCap" placeholder="Escreva uma legenda..." class="w-full border p-4 rounded-xl h-32 mb-4 outline-none focus:ring-2 focus:ring-pink-500"></textarea>
-        <button onclick="postarConteudo()" id="btnPost" class="bg-blue-500 text-white w-full py-4 rounded-xl font-bold text-lg">PUBLICAR</button>
+        <textarea id="postCap" placeholder="O que você está pensando?" class="w-full border-2 border-gray-100 p-4 rounded-2xl h-32 mb-6 outline-none focus:border-blue-500 text-lg"></textarea>
+        <button id="btnPost" onclick="postarConteudo()" class="bg-blue-600 text-white w-full py-4 rounded-2xl font-bold text-xl">PUBLICAR AGORA</button>
     </div>
 
-    <div id="profilePage" class="page">
-        <header class="p-4 border-b flex justify-between items-center">
-            <span class="font-bold text-lg" id="pNickHead">Perfil</span>
-            <i class="fa-solid fa-gear text-xl"></i>
-        </header>
-        <div class="p-6">
-            <div class="flex items-center gap-6 mb-8">
-                <img id="pPic" src="" class="w-20 h-20 rounded-full border-2 p-1 object-cover">
-                <div class="flex flex-1 justify-around text-center">
-                    <div><p class="font-bold text-lg" id="pPostCount">0</p><p class="text-xs text-gray-500">Posts</p></div>
-                    <div><p class="font-bold text-lg">0</p><p class="text-xs text-gray-500">Seguidores</p></div>
-                    <div><p class="font-bold text-lg" id="pLikes">0</p><p class="text-xs text-gray-500">Likes</p></div>
-                </div>
+    <div id="profilePage" class="page p-6 items-center">
+        <div class="w-full flex flex-col items-center">
+            <img id="pPic" src="" class="avatar-circle mb-4 border-gray-200">
+            <h2 id="pNick" class="text-2xl font-bold mb-8"></h2>
+            
+            <div class="grid grid-cols-3 w-full border-y py-6 mb-10 text-center">
+                <div><p class="font-bold text-xl" id="pPostCount">0</p><p class="text-xs text-gray-400 uppercase">Posts</p></div>
+                <div><p class="font-bold text-xl" id="pLikes">0</p><p class="text-xs text-gray-400 uppercase">Curtidas</p></div>
+                <div><p class="font-bold text-xl">0</p><p class="text-xs text-gray-400 uppercase">Amigos</p></div>
             </div>
-            <h2 id="pNick" class="font-bold mb-4"></h2>
-            <button onclick="window.location.reload()" class="w-full bg-gray-100 py-2 rounded-lg font-bold text-sm">Sair / Trocar Nick</button>
+            
+            <button onclick="window.location.reload()" class="w-full bg-red-50 text-red-500 py-4 rounded-2xl font-bold">SAIR DO CANAL</button>
         </div>
     </div>
 
-    <nav id="navBar" class="hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-4 max-w-[500px] mx-auto z-50">
-        <i class="fa-solid fa-house text-2xl cursor-pointer" onclick="showTab('feedPage')"></i>
-        <i class="fa-solid fa-square-plus text-2xl cursor-pointer text-pink-500" onclick="showTab('uploadPage')"></i>
-        <i class="fa-solid fa-user text-2xl cursor-pointer" onclick="showTab('profilePage')"></i>
+    <nav id="navBar" class="hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[450px] bg-white border-t flex justify-around p-5 z-50 shadow-2xl">
+        <i class="fa-solid fa-house text-2xl" onclick="showTab('feedPage')"></i>
+        <i class="fa-solid fa-circle-plus text-3xl text-blue-600" onclick="showTab('uploadPage')"></i>
+        <i class="fa-solid fa-user text-2xl" onclick="showTab('profilePage')"></i>
     </nav>
 
-    <script type="module">
-        // --- LOGICA DE FUNCIONAMENTO ---
-        let user = { nick: "", pic: "https://cdn-icons-png.flaticon.com/512/149/149071.png", likes: 0, posts: 0 };
-        let postsDB = JSON.parse(localStorage.getItem('posts_local')) || [];
+</div>
 
-        // Trocar Abas
-        window.showTab = (id) => {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            if(id === 'profilePage') renderProfile();
+<script>
+    let user = { nick: "", pic: "https://cdn-icons-png.flaticon.com/512/149/149071.png", likes: 0, posts: 0 };
+    let postsDB = JSON.parse(localStorage.getItem('fhotostube_db')) || [];
+
+    // NAVEGAÇÃO
+    function showTab(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        if(id === 'profilePage') renderProfile();
+        window.scrollTo(0,0);
+    }
+
+    // PREVIEW DO AVATAR
+    document.getElementById('profilePicFile').onchange = e => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            document.getElementById('previewPic').src = reader.result;
+            user.pic = reader.result;
         };
+        reader.readAsDataURL(e.target.files[0]);
+    };
 
-        // Preview da foto de perfil
-        document.getElementById('profilePicFile').onchange = e => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                document.getElementById('previewPic').src = reader.result;
-                user.pic = reader.result;
+    // INICIAR
+    function iniciarApp() {
+        const nick = document.getElementById('userNick').value;
+        if(!nick) return alert("Digite seu Nick!");
+        user.nick = nick;
+        document.getElementById('navBar').classList.remove('hidden');
+        showTab('feedPage');
+        renderFeed();
+    }
+
+    // POSTAR COM VALIDAÇÃO DE 60 SEGUNDOS
+    function postarConteudo() {
+        const file = document.getElementById('postFile').files[0];
+        const cap = document.getElementById('postCap').value;
+        if(!file) return alert("Selecione um arquivo!");
+
+        const isVideo = file.type.includes('video');
+
+        if(isVideo) {
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.onloadedmetadata = function() {
+                window.URL.revokeObjectURL(video.src);
+                if (video.duration > 61) {
+                    alert("Vídeo muito longo! Máximo permitido: 60 segundos.");
+                } else {
+                    processarUpload(file, cap, 'video');
+                }
+            }
+            video.src = URL.createObjectURL(file);
+        } else {
+            processarUpload(file, cap, 'photo');
+        }
+    }
+
+    function processarUpload(file, cap, type) {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const newPost = {
+                id: Date.now(),
+                nick: user.nick,
+                userPic: user.pic,
+                content: reader.result,
+                type: type,
+                caption: cap,
+                likes: 0,
+                comments: []
             };
-            reader.readAsDataURL(e.target.files[0]);
-        };
-
-        // Mostrar nome do arquivo no upload
-        document.getElementById('postFile').onchange = e => {
-            document.getElementById('fileName').innerText = e.target.files[0].name;
-        };
-
-        // FUNÇÃO COMEÇAR
-        window.iniciarApp = () => {
-            const nick = document.getElementById('userNick').value;
-            if(!nick) return alert("Por favor, digite um Nick para começar!");
-            user.nick = nick;
-            document.getElementById('navBar').classList.remove('hidden');
+            postsDB.unshift(newPost);
+            localStorage.setItem('fhotostube_db', JSON.stringify(postsDB));
+            user.posts++;
+            alert("Publicado com sucesso!");
             showTab('feedPage');
             renderFeed();
         };
+        reader.readAsDataURL(file);
+    }
 
-        // FUNÇÃO POSTAR
-        window.postarConteudo = () => {
-            const file = document.getElementById('postFile').files[0];
-            const cap = document.getElementById('postCap').value;
-            if(!file) return alert("Selecione uma imagem ou vídeo!");
+    // COMENTAR
+    window.addComment = (postId) => {
+        const input = document.getElementById(`cmnt-${postId}`);
+        if(!input.value) return;
+        
+        const post = postsDB.find(p => p.id === postId);
+        post.comments.push({ nick: user.nick, text: input.value });
+        localStorage.setItem('fhotostube_db', JSON.stringify(postsDB));
+        input.value = "";
+        renderFeed();
+    };
 
-            const reader = new FileReader();
-            reader.onload = () => {
-                const newPost = {
-                    id: Date.now(),
-                    nick: user.nick,
-                    userPic: user.pic,
-                    content: reader.result,
-                    type: file.type.includes('video') ? 'video' : 'photo',
-                    caption: cap,
-                    likes: 0
-                };
-                postsDB.unshift(newPost);
-                localStorage.setItem('posts_local', JSON.stringify(postsDB));
-                user.posts++;
-                
-                alert("Publicado!");
-                document.getElementById('postCap').value = "";
-                document.getElementById('fileName').innerText = "Selecione Foto, GIF ou Vídeo";
-                showTab('feedPage');
-                renderFeed();
-            };
-            reader.readAsDataURL(file);
-        };
-
-        // RENDERIZAR FEED
-        function renderFeed() {
-            const list = document.getElementById('feedList');
-            list.innerHTML = postsDB.map(p => `
-                <div class="bg-white border-b mb-4">
-                    <div class="p-3 flex items-center gap-2">
-                        <img src="${p.userPic}" class="w-8 h-8 rounded-full border">
-                        <span class="font-bold text-sm">${p.nick}</span>
+    // RENDERIZAR FEED
+    function renderFeed() {
+        const list = document.getElementById('feedList');
+        list.innerHTML = postsDB.map(p => `
+            <div class="bg-white border-b-8 border-gray-50 text-left">
+                <div class="p-4 flex items-center gap-3">
+                    <img src="${p.userPic}" class="w-10 h-10 rounded-full object-cover">
+                    <span class="font-bold text-sm text-gray-800">${p.nick}</span>
+                </div>
+                ${p.type === 'video' ? `<video src="${p.content}" class="post-media" controls></video>` : `<img src="${p.content}" class="post-media">`}
+                <div class="p-4">
+                    <div class="flex gap-4 mb-3">
+                        <i class="fa-solid fa-heart text-2xl text-red-500"></i>
+                        <i class="fa-regular fa-comment text-2xl"></i>
                     </div>
-                    ${p.type === 'video' ? `<video src="${p.content}" class="w-full" controls></video>` : `<img src="${p.content}" class="post-img">`}
-                    <div class="p-3">
-                        <div class="flex items-center gap-2 mb-1">
-                            <i class="fa-solid fa-heart text-red-500"></i>
-                            <span class="font-bold text-sm">${p.likes} likes</span>
-                        </div>
-                        <p class="text-sm"><span class="font-bold">${p.nick}</span> ${p.caption}</p>
+                    <p class="text-sm mb-3 text-gray-700"><b>${p.nick}</b> ${p.caption}</p>
+                    
+                    <div class="bg-gray-50 rounded-xl p-3 mb-3">
+                        ${p.comments.map(c => `<p class="text-xs mb-1"><b>${c.nick}</b> ${c.text}</p>`).join('')}
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <input id="cmnt-${p.id}" type="text" placeholder="Comentar..." class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-xs outline-none">
+                        <button onclick="addComment(${p.id})" class="text-blue-600 font-bold text-xs">OK</button>
                     </div>
                 </div>
-            `).join('');
-        }
+            </div>
+        `).join('');
+    }
 
-        // RENDERIZAR PERFIL
-        function renderProfile() {
-            document.getElementById('pNick').innerText = user.nick;
-            document.getElementById('pNickHead').innerText = user.nick;
-            document.getElementById('pPic').src = user.pic;
-            document.getElementById('pPostCount').innerText = user.posts;
-            document.getElementById('pLikes').innerText = user.likes;
-        }
+    function renderProfile() {
+        document.getElementById('pNick').innerText = user.nick;
+        document.getElementById('pPic').src = user.pic;
+        document.getElementById('pPostCount').innerText = user.posts;
+        document.getElementById('pLikes').innerText = user.likes;
+    }
 
-    </script>
+    document.getElementById('postFile').onchange = e => {
+        if(e.target.files[0]) document.getElementById('fileName').innerText = e.target.files[0].name;
+    };
+</script>
+
 </body>
 </html>
