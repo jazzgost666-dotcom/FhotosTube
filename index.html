@@ -3,248 +3,588 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FhotosTube PRO | Elite</title>
+    <title>FhotosTube</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        body { background: #000; display: flex; justify-content: center; min-height: 100vh; font-family: sans-serif; overflow-x: hidden; }
-        .mobile-container { width: 100%; max-width: 450px; background: #fff; min-height: 100vh; position: relative; display: flex; flex-direction: column; }
-        .page { display: none; flex-direction: column; flex: 1; width: 100%; }
-        .page.active { display: flex; }
-        .post-media { width: 100%; max-height: 70vh; object-fit: contain; background: #000; }
-        .profile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
-        .grid-item { aspect-ratio: 1/1; position: relative; overflow: hidden; background: #eee; }
-        .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; }
-        #zoomModal { display: none; position: fixed; inset: 0; background: black; z-index: 100; justify-content: center; align-items: center; }
+        body { background: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; min-height: 100vh; margin: 0; overflow-y: scroll; }
+        
+        /* Container Principal (Mobile View) */
+        .app-container { width: 100%; max-width: 480px; background: #000; min-height: 100vh; position: relative; border-left: 1px solid #1a1a1a; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; }
+        
+        /* Controle de Telas */
+        .screen { display: none; flex-direction: column; flex: 1; animation: fadeIn 0.3s ease; }
+        .active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Inputs Estilizados */
+        .auth-input { background: #121212; border: 1px solid #333; color: white; padding: 16px; border-radius: 12px; width: 100%; margin-bottom: 12px; outline: none; transition: 0.3s; font-size: 15px; }
+        .auth-input:focus { border-color: #2563eb; background: #0a0a0a; }
+        
+        /* Botões */
+        .btn-primary { background: #2563eb; color: white; font-weight: 700; padding: 14px; border-radius: 12px; width: 100%; letter-spacing: 0.5px; transition: 0.2s; }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-outline { border: 1px solid #333; color: white; font-weight: 600; padding: 8px 16px; border-radius: 8px; font-size: 13px; background: transparent; }
+
+        /* Grid de Fotos */
+        .grid-posts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding-bottom: 80px; }
+        .grid-item { aspect-ratio: 1/1; position: relative; background: #111; cursor: pointer; overflow: hidden; }
+        .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; transition: 0.3s; }
+        .grid-item:hover img { transform: scale(1.05); }
+        
+        /* Modal de Zoom */
+        #zoomModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 9999; justify-content: center; align-items: center; }
         .hide-scroll::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
 
-<div class="mobile-container">
-    
-    <div id="setupPage" class="page active items-center justify-center p-8 text-center">
-        <h1 class="text-5xl font-black mb-10 text-blue-600 italic">FhotosTube</h1>
-        <div class="relative mb-8">
-            <img id="previewPic" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-32 h-32 rounded-full object-cover border-4 border-blue-600 mx-auto">
-            <input type="file" id="profilePicFile" accept="image/*" class="hidden" onchange="previewImg(this)">
-            <button onclick="document.getElementById('profilePicFile').click()" class="absolute bottom-0 right-1/4 bg-blue-600 text-white p-2 rounded-full border-2 border-white"><i class="fa-solid fa-camera"></i></button>
+<div class="app-container">
+
+    <div id="loginScreen" class="screen active justify-center p-8">
+        <div class="text-center mb-10">
+            <h1 class="text-5xl font-black text-blue-600 italic tracking-tighter mb-2">FhotosTube</h1>
+            <p class="text-gray-400 font-medium">Bem-vindo(a) de volta!</p>
         </div>
-        <input type="text" id="userNick" placeholder="Seu apelido..." class="w-full border-b-2 p-3 text-center text-2xl outline-none mb-10">
-        <button onclick="iniciarApp()" class="bg-blue-600 text-white w-full py-4 rounded-2xl font-bold text-xl shadow-xl">CRIAR CANAL</button>
+        
+        <input type="text" id="loginUser" placeholder="Username" class="auth-input">
+        <input type="password" id="loginPass" placeholder="Password" class="auth-input">
+        
+        <button onclick="fazerLogin()" class="btn-primary mb-6 shadow-lg shadow-blue-900/20">ENTRAR</button>
+        
+        <p class="text-center text-sm text-gray-500">
+            Não tem uma conta? <br>
+            <span onclick="navegar('registerScreen')" class="text-blue-500 font-bold cursor-pointer hover:underline">Crie já! CLIQUE AQUI</span>
+        </p>
     </div>
 
-    <div id="feedPage" class="page">
-        <header class="p-4 border-b flex justify-between items-center sticky top-0 bg-white z-50">
-            <span class="text-2xl font-black italic text-blue-600">FhotosTube</span>
-            <div class="flex gap-5">
-                <i class="fa-solid fa-user-plus text-xl text-gray-700" onclick="showTab('friendsPage')"></i>
-                <i class="fa-solid fa-message text-xl text-gray-700" onclick="showTab('chatListPage')"></i>
-            </div>
+    <div id="registerScreen" class="screen justify-center p-8">
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-black text-white italic tracking-tighter mb-1">Criar Conta</h1>
+            <p class="text-blue-500 text-sm font-bold uppercase tracking-widest">Junte-se ao FhotosTube</p>
+        </div>
+        
+        <input type="text" id="regUser" placeholder="Username (Ex: Sad_Chad)" class="auth-input">
+        <input type="text" id="regGmail" placeholder="Email (@gmail.com)" class="auth-input">
+        <input type="password" id="regPass" placeholder="Password" class="auth-input">
+        
+        <button onclick="criarConta()" class="btn-primary mb-6">CRIAR CONTA</button>
+        
+        <button onclick="navegar('loginScreen')" class="w-full text-center text-sm text-gray-500 hover:text-white">Voltar para Login</button>
+    </div>
+
+    <div id="feedScreen" class="screen">
+        <header class="h-16 border-b border-gray-800 flex justify-between items-center px-4 sticky top-0 bg-black/90 backdrop-blur-md z-20">
+            <span class="text-2xl font-black italic text-blue-600 tracking-tighter">FhotosTube</span>
+            <i class="fa-regular fa-paper-plane text-xl text-gray-300"></i>
         </header>
-        <div id="feedList" class="flex-1 overflow-y-auto pb-24 hide-scroll"></div>
-    </div>
-
-    <div id="uploadPage" class="page p-6 items-center text-center">
-        <h2 class="text-2xl font-bold mb-8">Novo Post</h2>
-        <div class="w-full border-4 border-dashed rounded-3xl p-10 bg-gray-50 mb-6 cursor-pointer" onclick="document.getElementById('postFile').click()">
-            <i class="fa-solid fa-cloud-arrow-up text-5xl text-blue-400 mb-2"></i>
-            <p id="fileName">Vídeo ou Foto</p>
-            <input type="file" id="postFile" accept="image/*,video/*" class="hidden" onchange="document.getElementById('fileName').innerText = this.files[0].name">
-        </div>
-        <textarea id="postCap" placeholder="Legenda do post..." class="w-full border p-4 rounded-2xl h-24 mb-6 outline-none"></textarea>
-        <button id="btnPost" onclick="postar()" class="bg-blue-600 text-white w-full py-4 rounded-2xl font-bold">PUBLICAR</button>
-    </div>
-
-    <div id="profilePage" class="page">
-        <div class="p-6 flex flex-col items-center border-b">
-            <img id="pPic" class="w-24 h-24 rounded-full object-cover border-2 p-1 mb-2">
-            <h2 id="pNick" class="text-xl font-bold"></h2>
-            <div class="flex gap-8 mt-4 text-center">
-                <div><p class="font-bold" id="pPostNum">0</p><p class="text-xs text-gray-500 text-center">Posts</p></div>
-                <div><p class="font-bold">0</p><p class="text-xs text-gray-500 text-center">Seguidores</p></div>
+        <div id="feedContent" class="flex-1 overflow-y-auto hide-scroll pb-24">
             </div>
-        </div>
-        <div id="profileGrid" class="profile-grid overflow-y-auto hide-scroll"></div>
     </div>
 
-    <div id="friendsPage" class="page p-4">
-        <h2 class="text-xl font-bold mb-4">Pessoas no FhotosTube</h2>
-        <div id="usersList" class="space-y-3"></div>
-    </div>
-
-    <div id="chatBoxPage" class="page">
-        <header class="p-4 border-b flex items-center gap-4">
-            <i class="fa-solid fa-arrow-left" onclick="showTab('feedPage')"></i>
-            <span id="chatWith" class="font-bold">Chat</span>
+    <div id="profileScreen" class="screen">
+        <header class="h-14 border-b border-gray-800 flex justify-between items-center px-4 bg-black sticky top-0 z-20">
+            <div class="flex items-center gap-3">
+                <i onclick="voltarFeed()" class="fa-solid fa-arrow-left text-xl cursor-pointer p-2"></i>
+                <span id="profileUsername" class="font-bold text-lg truncate max-w-[200px]"></span>
+            </div>
+            <i id="settingsBtn" class="fa-solid fa-gear text-lg cursor-pointer hidden text-gray-400 hover:text-white" onclick="abrirConfig()"></i>
         </header>
-        <div id="msgList" class="flex-1 p-4 overflow-y-auto space-y-2 bg-gray-50"></div>
-        <div class="p-4 border-t flex gap-2">
-            <input id="msgInput" type="text" placeholder="Mensagem..." class="flex-1 border rounded-full px-4 py-2 outline-none">
-            <button onclick="enviarMsg()" class="bg-blue-600 text-white p-2 rounded-full w-10 h-10"><i class="fa-solid fa-paper-plane"></i></button>
+        
+        <div class="p-5">
+            <div class="flex items-center justify-between mb-6">
+                <img id="profilePic" src="" class="w-24 h-24 rounded-full object-cover border-4 border-black ring-2 ring-gray-800">
+                <div class="flex gap-6 text-center mr-2">
+                    <div><b id="countPosts" class="block text-xl">0</b><span class="text-xs text-gray-500 font-bold uppercase">Posts</span></div>
+                    <div><b id="countFollowers" class="block text-xl">0</b><span class="text-xs text-gray-500 font-bold uppercase">Fãs</span></div>
+                    <div><b id="countFollowing" class="block text-xl">0</b><span class="text-xs text-gray-500 font-bold uppercase">Seguindo</span></div>
+                </div>
+            </div>
+            
+            <div id="profileBio" class="text-sm text-gray-300 mb-4 px-1"></div>
+
+            <div id="profileActions" class="mb-4"></div>
+        </div>
+        
+        <div class="border-t border-gray-900">
+            <div class="flex justify-center gap-8 py-3 text-gray-500 border-b border-gray-900">
+                <i class="fa-solid fa-table-cells text-blue-500"></i>
+                <i class="fa-solid fa-user-tag"></i>
+            </div>
+            <div id="profileGrid" class="grid-posts"></div>
         </div>
     </div>
 
-    <nav id="navBar" class="hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[450px] bg-white border-t flex justify-around p-4 z-50">
-        <i class="fa-solid fa-house text-2xl" onclick="showTab('feedPage')"></i>
-        <i class="fa-solid fa-plus-square text-2xl" onclick="showTab('uploadPage')"></i>
-        <i class="fa-solid fa-user text-2xl" onclick="showTab('profilePage')"></i>
+    <div id="uploadScreen" class="screen p-6 justify-center bg-black">
+        <h2 class="text-2xl font-bold mb-8 text-center text-white">Novo Post</h2>
+        
+        <label for="fileInput" class="block w-full aspect-square border-2 border-dashed border-gray-800 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:border-blue-600 hover:bg-gray-900 transition mb-4 group">
+            <i class="fa-solid fa-image text-5xl text-gray-700 group-hover:text-blue-500 mb-4 transition"></i>
+            <span id="fileName" class="text-gray-500 font-medium text-sm">Toque para selecionar</span>
+            <input type="file" id="fileInput" accept="image/*,video/*" class="hidden">
+        </label>
+
+        <textarea id="postCaption" placeholder="Escreva uma legenda..." class="auth-input bg-black h-24 resize-none border-gray-800"></textarea>
+        
+        <div class="flex gap-3 mt-4">
+            <button onclick="navegar('feedScreen')" class="flex-1 py-3 font-bold text-gray-500 hover:text-white">Cancelar</button>
+            <button onclick="publicarPost()" class="flex-1 bg-blue-600 text-white rounded-xl font-bold">Publicar</button>
+        </div>
+    </div>
+
+    <div id="settingsScreen" class="screen p-6">
+        <h2 class="text-xl font-bold mb-8 text-center">Editar Perfil</h2>
+        
+        <div class="flex flex-col items-center mb-8">
+            <img id="editPreview" src="" class="w-28 h-28 rounded-full mb-4 object-cover border-2 border-gray-700">
+            <label class="text-blue-500 font-bold text-sm cursor-pointer">
+                Alterar Foto
+                <input type="file" id="newPicInput" class="hidden" accept="image/*" onchange="previewImagem(this)">
+            </label>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="text-xs text-gray-500 font-bold uppercase ml-1">Biografia</label>
+                <input type="text" id="editBio" class="auth-input mt-1" placeholder="Fale sobre você...">
+            </div>
+            
+            <button onclick="salvarPerfil()" class="btn-primary">SALVAR ALTERAÇÕES</button>
+            <div class="h-4"></div>
+            <button onclick="logout()" class="w-full text-red-500 py-3 font-bold text-sm border border-red-900/30 rounded-xl hover:bg-red-900/10">SAIR DA CONTA</button>
+            <button onclick="voltarPerfil()" class="w-full py-3 text-gray-500 text-sm mt-2">Voltar</button>
+        </div>
+    </div>
+
+    <div id="chatScreen" class="screen bg-black">
+        <header class="h-16 border-b border-gray-800 flex items-center px-4 gap-4 sticky top-0 bg-black z-30">
+            <i class="fa-solid fa-arrow-left cursor-pointer text-xl p-2" onclick="voltarPerfil()"></i>
+            <img id="chatAvatar" src="" class="w-9 h-9 rounded-full object-cover">
+            <span id="chatName" class="font-bold text-lg"></span>
+        </header>
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-3 pb-20"></div>
+        <div class="p-3 border-t border-gray-800 flex gap-2 fixed bottom-0 w-full max-w-[480px] bg-black">
+            <input type="text" id="chatInput" class="flex-1 bg-gray-900 border-none rounded-full px-5 py-3 text-white outline-none" placeholder="Mensagem...">
+            <button onclick="enviarMensagem()" class="text-blue-500 font-bold px-3">Enviar</button>
+        </div>
+    </div>
+
+    <nav id="navBar" class="hidden fixed bottom-0 w-full max-w-[480px] bg-black border-t border-gray-800 flex justify-around items-center h-16 z-50 pb-1">
+        <i class="fa-solid fa-house text-2xl cursor-pointer text-white hover:text-blue-500 transition" onclick="navegar('feedScreen'); renderFeed()"></i>
+        <i class="fa-regular fa-square-plus text-3xl cursor-pointer text-white hover:text-blue-500 transition" onclick="navegar('uploadScreen')"></i>
+        <div class="relative cursor-pointer" onclick="verPerfil(currentUser.originalName)">
+            <img id="navAvatar" src="" class="w-7 h-7 rounded-full border border-gray-500">
+        </div>
     </nav>
+
 </div>
 
-<div id="zoomModal" onclick="this.style.display='none'">
-    <div id="zoomContent" class="w-full flex justify-center p-4"></div>
+<div id="zoomModal">
+    <button class="absolute top-6 right-6 text-white text-4xl drop-shadow-lg z-50 cursor-pointer" onclick="fecharZoom()">&times;</button>
+    <div id="zoomContent" class="w-full p-2 flex justify-center"></div>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, set, push, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+<script>
+    // --- BANCO DE DADOS NOVO (V3 - Limpo e Corrigido) ---
+    const DB_USERS = 'ft_users_v3';
+    const DB_POSTS = 'ft_posts_v3';
+    const DB_CHATS = 'ft_chats_v3';
+    
+    // Carrega ou Inicia Vazio
+    let users = JSON.parse(localStorage.getItem(DB_USERS)) || {};
+    let posts = JSON.parse(localStorage.getItem(DB_POSTS)) || [];
+    let chats = JSON.parse(localStorage.getItem(DB_CHATS)) || {};
+    
+    let currentUser = null;
+    let viewingUser = null; 
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyAMHAKVot044psR421B_t-Ht5EmsueVS8A",
-        authDomain: "game-dev-space.firebaseapp.com",
-        databaseURL: "https://game-dev-space-default-rtdb.firebaseio.com",
-        projectId: "game-dev-space",
-        storageBucket: "game-dev-space.firebasestorage.app",
-        appId: "1:1073185335190:web:ae9ffd88cdf89f53cbdfb7"
-    };
+    // --- NAVEGAÇÃO ---
+    function navegar(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+        
+        const nav = document.getElementById('navBar');
+        // Esconde Nav no Login, Cadastro e Chat
+        if(['loginScreen', 'registerScreen', 'chatScreen'].includes(screenId)) {
+            nav.classList.add('hidden');
+        } else {
+            nav.classList.remove('hidden');
+            updateNavAvatar();
+        }
+    }
 
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+    function updateNavAvatar() {
+        if(currentUser) document.getElementById('navAvatar').src = currentUser.pic;
+    }
 
-    let myId = localStorage.getItem('ft_uid') || 'user_' + Math.floor(Math.random() * 9999);
-    localStorage.setItem('ft_uid', myId);
-    let myData = { nick: '', pic: 'https://cdn-icons-png.flaticon.com/512/149/149071.png', following: {} };
-    let activeChat = '';
+    // --- CADASTRO E LOGIN BLINDADOS ---
+    function criarConta() {
+        const userInput = document.getElementById('regUser').value.trim(); // Ex: Sad_Chad
+        const gmail = document.getElementById('regGmail').value.trim();
+        const pass = document.getElementById('regPass').value;
 
-    window.previewImg = (input) => {
+        if(!userInput || !gmail || !pass) return alert("Preencha todos os campos!");
+        if(!gmail.toLowerCase().endsWith('@gmail.com')) return alert("O email precisa terminar com @gmail.com");
+        
+        // Cria uma CHAVE única minúscula para evitar duplicatas (sad_chad)
+        const userKey = userInput.toLowerCase();
+
+        if(users[userKey]) return alert("Este usuário já existe! Tente outro.");
+
+        // Salva os dados
+        users[userKey] = {
+            originalName: userInput, // Nome bonito (Sad_Chad)
+            username: userKey,       // ID interno (sad_chad)
+            gmail: gmail,
+            password: pass,
+            pic: 'https://cdn-icons-png.flaticon.com/512/149/149071.png', 
+            bio: '',
+            followers: [],
+            following: []
+        };
+        
+        salvarDados();
+        alert("Conta criada com sucesso! Faça login.");
+        navegar('loginScreen');
+    }
+
+    function fazerLogin() {
+        const userInput = document.getElementById('loginUser').value.trim();
+        const pass = document.getElementById('loginPass').value;
+        
+        // Busca pela chave minúscula
+        const userKey = userInput.toLowerCase();
+
+        if(!users[userKey] || users[userKey].password !== pass) {
+            return alert("Usuário ou Senha incorretos!");
+        }
+
+        // Login Aceito
+        currentUser = users[userKey];
+        
+        // Garante que arrays existam (Correção do erro undefined)
+        if(!currentUser.followers) currentUser.followers = [];
+        if(!currentUser.following) currentUser.following = [];
+        
+        navegar('feedScreen');
+        renderFeed();
+    }
+
+    function logout() {
+        currentUser = null;
+        navegar('loginScreen');
+        document.getElementById('loginPass').value = '';
+    }
+
+    // --- FEED ---
+    function renderFeed() {
+        const container = document.getElementById('feedContent');
+        container.innerHTML = '';
+
+        if(posts.length === 0) {
+            container.innerHTML = `<div class="text-center text-gray-600 mt-20">Nenhum post ainda.<br>Seja o primeiro!</div>`;
+            return;
+        }
+
+        [...posts].reverse().forEach(post => {
+            const authorKey = post.authorKey || post.author.toLowerCase(); // Compatibilidade
+            const author = users[authorKey];
+            
+            if(!author) return; 
+
+            const isLiked = post.likes.includes(currentUser.username);
+            
+            // Mídia
+            let mediaContent = '';
+            if(post.type === 'video') {
+                mediaContent = `<video src="${post.content}" class="w-full max-h-[500px] bg-black" controls></video>`;
+            } else {
+                mediaContent = `<img src="${post.content}" class="w-full max-h-[500px] object-contain bg-black" onclick="abrirZoom('${post.content}', 'img')">`;
+            }
+
+            // Comentários HTML
+            const commentsHTML = post.comments.map(c => 
+                `<p class="text-sm text-gray-300"><b class="text-white cursor-pointer" onclick="verPerfil('${c.userName}')">${c.userName}</b> ${c.text}</p>`
+            ).join('');
+
+            const div = document.createElement('div');
+            div.className = 'mb-4 border-b border-gray-800 pb-4 bg-black';
+            div.innerHTML = `
+                <div class="flex items-center gap-3 p-3">
+                    <img src="${author.pic}" class="w-9 h-9 rounded-full object-cover cursor-pointer ring-1 ring-gray-800" onclick="verPerfil('${author.originalName}')">
+                    <span class="font-bold text-sm cursor-pointer hover:text-gray-300" onclick="verPerfil('${author.originalName}')">${author.originalName}</span>
+                </div>
+                ${mediaContent}
+                <div class="p-3">
+                    <div class="flex gap-4 text-2xl mb-3">
+                        <i class="${isLiked ? 'fa-solid text-red-500' : 'fa-regular text-white'} fa-heart cursor-pointer transition" onclick="toggleLike(${post.id})"></i>
+                        <i class="fa-regular fa-comment cursor-pointer hover:text-gray-300" onclick="document.getElementById('inp-${post.id}').focus()"></i>
+                    </div>
+                    <p class="font-bold text-sm mb-2">${post.likes.length} curtidas</p>
+                    
+                    ${post.caption ? `<p class="text-sm mb-2"><b class="mr-1">${author.originalName}</b>${post.caption}</p>` : ''}
+                    
+                    <div class="space-y-1 mb-3 max-h-24 overflow-y-auto custom-scroll">
+                        ${commentsHTML}
+                    </div>
+                    
+                    <div class="flex gap-2 mt-2">
+                        <input id="inp-${post.id}" type="text" placeholder="Adicione um comentário..." class="bg-transparent text-sm w-full outline-none text-gray-400">
+                        <button onclick="comentar(${post.id})" class="text-blue-500 text-sm font-bold disabled:opacity-50">Publicar</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // --- PERFIL ---
+    function verPerfil(name) {
+        const targetKey = name.toLowerCase();
+        viewingUser = users[targetKey];
+        if(!viewingUser) return;
+
+        // Correção de Arrays
+        if(!viewingUser.followers) viewingUser.followers = [];
+        if(!viewingUser.following) viewingUser.following = [];
+
+        navegar('profileScreen');
+        
+        document.getElementById('profileUsername').innerText = viewingUser.originalName;
+        document.getElementById('profilePic').src = viewingUser.pic;
+        document.getElementById('profileBio').innerText = viewingUser.bio || '';
+        document.getElementById('countFollowers').innerText = viewingUser.followers.length;
+        document.getElementById('countFollowing').innerText = viewingUser.following.length;
+
+        const isMe = currentUser.username === viewingUser.username;
+        const btnArea = document.getElementById('profileActions');
+        const configBtn = document.getElementById('settingsBtn');
+
+        if (isMe) {
+            configBtn.classList.remove('hidden');
+            btnArea.innerHTML = `<button onclick="abrirConfig()" class="w-full bg-gray-900 text-white font-bold py-2 rounded-lg border border-gray-700 text-sm">Editar Perfil</button>`;
+        } else {
+            configBtn.classList.add('hidden');
+            const isFollowing = currentUser.following.includes(viewingUser.username);
+            
+            let html = `<div class="flex gap-2">`;
+            if (isFollowing) {
+                html += `<button onclick="toggleFollow('${viewingUser.username}')" class="flex-1 bg-gray-800 text-white font-bold py-2 rounded-lg text-sm border border-gray-700">Seguindo</button>`;
+                html += `<button onclick="abrirChat('${viewingUser.originalName}')" class="flex-1 bg-gray-800 text-white font-bold py-2 rounded-lg text-sm border border-gray-700">Mensagem</button>`;
+            } else {
+                html += `<button onclick="toggleFollow('${viewingUser.username}')" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg text-sm">Seguir</button>`;
+            }
+            html += `</div>`;
+            btnArea.innerHTML = html;
+        }
+
+        // Grid do Perfil
+        const grid = document.getElementById('profileGrid');
+        grid.innerHTML = '';
+        const userPosts = posts.filter(p => p.authorKey === viewingUser.username).reverse();
+        
+        document.getElementById('countPosts').innerText = userPosts.length;
+
+        userPosts.forEach(p => {
+            const el = document.createElement('div');
+            el.className = 'grid-item';
+            el.innerHTML = p.type === 'video' 
+                ? `<video src="${p.content}"></video><i class="fa-solid fa-play absolute top-2 right-2 text-white drop-shadow-md"></i>`
+                : `<img src="${p.content}">`;
+            el.onclick = () => abrirZoom(p.content, p.type);
+            grid.appendChild(el);
+        });
+    }
+
+    function voltarFeed() { navegar('feedScreen'); }
+    function voltarPerfil() { 
+        if(viewingUser) verPerfil(viewingUser.originalName); 
+        else navegar('feedScreen'); 
+    }
+
+    // --- AÇÕES ---
+    function toggleLike(postId) {
+        const post = posts.find(p => p.id === postId);
+        const idx = post.likes.indexOf(currentUser.username);
+        
+        if (idx === -1) post.likes.push(currentUser.username);
+        else post.likes.splice(idx, 1);
+        
+        salvarDados();
+        renderFeed();
+    }
+
+    function comentar(postId) {
+        const input = document.getElementById(`inp-${postId}`);
+        const txt = input.value.trim();
+        if(!txt) return;
+
+        const post = posts.find(p => p.id === postId);
+        post.comments.push({ userName: currentUser.originalName, text: txt });
+        
+        salvarDados();
+        renderFeed();
+    }
+
+    function toggleFollow(targetKey) {
+        const target = users[targetKey];
+        const me = currentUser;
+
+        const idx = me.following.indexOf(targetKey);
+        
+        if (idx === -1) {
+            me.following.push(targetKey);
+            target.followers.push(me.username);
+        } else {
+            me.following.splice(idx, 1);
+            const tIdx = target.followers.indexOf(me.username);
+            if(tIdx !== -1) target.followers.splice(tIdx, 1);
+        }
+        
+        salvarDados();
+        verPerfil(target.originalName);
+    }
+
+    // --- UPLOAD ---
+    function publicarPost() {
+        const file = document.getElementById('fileInput').files[0];
+        const caption = document.getElementById('postCaption').value;
+
+        if(!file) return alert("Escolha uma foto ou vídeo!");
+
         const reader = new FileReader();
         reader.onload = (e) => {
-            document.getElementById('previewPic').src = e.target.result;
-            myData.pic = e.target.result;
-        }
-        reader.readAsDataURL(input.files[0]);
-    };
-
-    window.showTab = (id) => {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-    };
-
-    window.iniciarApp = () => {
-        const n = document.getElementById('userNick').value;
-        if(!n) return alert("Nick?");
-        myData.nick = n;
-        set(ref(db, 'users/' + myId), { nick: n, pic: myData.pic, id: myId });
-        document.getElementById('navBar').classList.remove('hidden');
-        showTab('feedPage');
-        observarTudo();
-    };
-
-    function observarTudo() {
-        // Observar Posts
-        onValue(ref(db, 'posts'), (snap) => {
-            const list = document.getElementById('feedList');
-            const grid = document.getElementById('profileGrid');
-            list.innerHTML = ''; grid.innerHTML = '';
-            let posts = [];
-            snap.forEach(d => { posts.unshift(d.val()); });
+            posts.push({
+                id: Date.now(),
+                authorKey: currentUser.username,
+                content: e.target.result,
+                type: file.type.startsWith('video') ? 'video' : 'image',
+                caption: caption,
+                likes: [],
+                comments: []
+            });
+            salvarDados();
             
-            posts.forEach(p => {
-                const itemHtml = `
-                <div class="bg-white border-b-4 border-gray-100 pb-4">
-                    <div class="p-3 flex items-center gap-2 font-bold text-sm"><img src="${p.upic}" class="w-8 h-8 rounded-full">${p.unick}</div>
-                    <div onclick="maximizar('${p.url}', '${p.type}')">
-                        ${p.type === 'video' ? `<video src="${p.url}" class="post-media"></video>` : `<img src="${p.url}" class="post-media">`}
-                    </div>
-                    <div class="p-3"><p class="text-sm"><b>${p.unick}</b> ${p.cap}</p></div>
-                </div>`;
-                list.innerHTML += itemHtml;
-                if(p.uid === myId) {
-                    grid.innerHTML += `<div class="grid-item" onclick="maximizar('${p.url}', '${p.type}')">${p.type==='video' ? `<video src="${p.url}"></video>` : `<img src="${p.url}">`}</div>`;
-                }
-            });
-            document.getElementById('pPostNum').innerText = posts.filter(p=>p.uid===myId).length;
-        });
-
-        // Observar Usuários (Sistema de Amigos)
-        onValue(ref(db, 'users'), (snap) => {
-            const uList = document.getElementById('usersList');
-            uList.innerHTML = '';
-            snap.forEach(d => {
-                const u = d.val();
-                if(u.id === myId) {
-                    document.getElementById('pNick').innerText = u.nick;
-                    document.getElementById('pPic').src = u.pic;
-                    return;
-                }
-                uList.innerHTML += `
-                <div class="flex items-center justify-between bg-white p-3 border rounded-xl">
-                    <div class="flex items-center gap-3"><img src="${u.pic}" class="w-10 h-10 rounded-full"><b>${u.nick}</b></div>
-                    <button onclick="seguir('${u.id}', '${u.nick}')" class="bg-blue-600 text-white px-4 py-1 rounded-full text-xs font-bold">Seguir e Chat</button>
-                </div>`;
-            });
-        });
-    }
-
-    window.postar = () => {
-        const file = document.getElementById('postFile').files[0];
-        const cap = document.getElementById('postCap').value;
-        if(!file) return alert("Selecione!");
-        
-        const btn = document.getElementById('btnPost');
-        btn.innerText = "Subindo..."; btn.disabled = true;
-
-        const reader = new FileReader();
-        reader.onload = () => {
-            const postRef = push(ref(db, 'posts'));
-            set(postRef, {
-                uid: myId, unick: myData.nick, upic: myData.pic,
-                url: reader.result, cap: cap, type: file.type.includes('video') ? 'video' : 'photo'
-            });
-            btn.innerText = "PUBLICAR"; btn.disabled = false;
-            showTab('feedPage');
+            // Reset
+            document.getElementById('fileInput').value = '';
+            document.getElementById('postCaption').value = '';
+            document.getElementById('fileName').innerText = 'Toque para selecionar';
+            
+            navegar('feedScreen');
+            renderFeed();
         };
         reader.readAsDataURL(file);
-    };
-
-    window.seguir = (hisId, hisNick) => {
-        activeChat = [myId, hisId].sort().join('_');
-        document.getElementById('chatWith').innerText = hisNick;
-        showTab('chatBoxPage');
-        abrirChat();
-    };
-
-    function abrirChat() {
-        onValue(ref(db, 'chats/' + activeChat), (snap) => {
-            const mList = document.getElementById('msgList');
-            mList.innerHTML = '';
-            snap.forEach(d => {
-                const m = d.val();
-                const isMe = m.uid === myId;
-                mList.innerHTML += `<div class="${isMe ? 'text-right' : 'text-left'}">
-                    <span class="${isMe ? 'bg-blue-600 text-white' : 'bg-white text-black border'} inline-block px-4 py-2 rounded-2xl text-sm shadow-sm">
-                        ${m.txt}
-                    </span>
-                </div>`;
-            });
-            mList.scrollTop = mList.scrollHeight;
-        });
     }
 
-    window.enviarMsg = () => {
-        const t = document.getElementById('msgInput').value;
-        if(!t) return;
-        push(ref(db, 'chats/' + activeChat), { uid: myId, txt: t });
-        document.getElementById('msgInput').value = '';
-    };
+    document.getElementById('fileInput').onchange = function() {
+        if(this.files[0]) document.getElementById('fileName').innerText = this.files[0].name;
+    }
 
-    window.maximizar = (url, type) => {
-        const modal = document.getElementById('zoomModal');
-        modal.style.display = 'flex';
-        document.getElementById('zoomContent').innerHTML = type==='video' ? `<video src="${url}" controls autoplay class="max-w-full"></video>` : `<img src="${url}" class="max-w-full">`;
-    };
+    // --- CHAT ---
+    function abrirChat(targetName) {
+        navegar('chatScreen');
+        const targetKey = targetName.toLowerCase();
+        const target = users[targetKey];
+        
+        document.getElementById('chatName').innerText = target.originalName;
+        document.getElementById('chatAvatar').src = target.pic;
+        
+        window.chatTargetKey = targetKey;
+        renderChat();
+    }
+
+    function renderChat() {
+        const k1 = currentUser.username;
+        const k2 = window.chatTargetKey;
+        const chatID = [k1, k2].sort().join('_');
+        
+        const msgs = chats[chatID] || [];
+        const box = document.getElementById('chatMessages');
+        box.innerHTML = '';
+
+        msgs.forEach(m => {
+            const isMe = m.sender === k1;
+            box.innerHTML += `
+                <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+                    <div class="${isMe ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-200'} px-4 py-2 rounded-2xl max-w-[75%] text-sm break-words">
+                        ${m.text}
+                    </div>
+                </div>
+            `;
+        });
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function enviarMensagem() {
+        const inp = document.getElementById('chatInput');
+        const txt = inp.value.trim();
+        if(!txt) return;
+
+        const k1 = currentUser.username;
+        const k2 = window.chatTargetKey;
+        const chatID = [k1, k2].sort().join('_');
+
+        if(!chats[chatID]) chats[chatID] = [];
+        
+        chats[chatID].push({ sender: k1, text: txt, time: Date.now() });
+        salvarDados();
+        inp.value = '';
+        renderChat();
+    }
+
+    // --- CONFIGURAÇÕES ---
+    function abrirConfig() {
+        navegar('settingsScreen');
+        document.getElementById('editPreview').src = currentUser.pic;
+        document.getElementById('editBio').value = currentUser.bio || '';
+    }
+
+    function previewImagem(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => document.getElementById('editPreview').src = e.target.result;
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function salvarPerfil() {
+        const newBio = document.getElementById('editBio').value;
+        const file = document.getElementById('newPicInput').files[0];
+
+        currentUser.bio = newBio;
+
+        if(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentUser.pic = e.target.result;
+                salvarDados();
+                verPerfil(currentUser.originalName);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            salvarDados();
+            verPerfil(currentUser.originalName);
+        }
+    }
+
+    // --- UTILITÁRIOS ---
+    function salvarDados() {
+        localStorage.setItem(DB_USERS, JSON.stringify(users));
+        localStorage.setItem(DB_POSTS, JSON.stringify(posts));
+        localStorage.setItem(DB_CHATS, JSON.stringify(chats));
+    }
+
+    function abrirZoom(url, type) {
+        const m = document.getElementById('zoomModal');
+        const c = document.getElementById('zoomContent');
+        m.style.display = 'flex';
+        c.innerHTML = type === 'video' 
+            ? `<video src="${url}" controls autoplay class="max-w-full max-h-[90vh]"></video>`
+            : `<img src="${url}" class="max-w-full max-h-[90vh] object-contain">`;
+    }
+    
+    function fecharZoom() { document.getElementById('zoomModal').style.display = 'none'; }
+
 </script>
-
 </body>
 </html>
