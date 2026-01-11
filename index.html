@@ -1,1 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FhotosTube</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; display: flex; justify-content: center; overflow-x: hidden; }
+        .app-container { width: 100%; max-width: 480px; background: #000; min-height: 100vh; position: relative; border-left: 1px solid #1a1a1a; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column; }
+        .screen { display: none; flex-direction: column; flex: 1; animation: fadeIn 0.2s ease; }
+        .active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .auth-input { background: #121212; border: 1px solid #333; color: white; padding: 15px; border-radius: 12px; width: 100%; margin-bottom: 12px; outline: none; }
+        .btn-blue { background: #2563eb; color: white; font-weight: bold; padding: 14px; border-radius: 12px; width: 100%; }
+        .grid-posts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+        .grid-item { aspect-ratio: 1/1; background: #111; overflow: hidden; }
+        .grid-item img, .grid-item video { width: 100%; height: 100%; object-fit: cover; }
+        nav { position: fixed; bottom: 0; width: 100%; max-width: 480px; background: #000; border-top: 1px solid #1a1a1a; height: 60px; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
+    </style>
+</head>
+<body>
 
+<div class="app-container">
+    <div id="loginScreen" class="screen active justify-center p-8">
+        <h1 class="text-5xl font-black text-blue-600 italic text-center mb-10">FhotosTube</h1>
+        <input type="text" id="logUser" placeholder="Username" class="auth-input">
+        <input type="password" id="logPass" placeholder="Password" class="auth-input">
+        <button id="btnEntrar" class="btn-blue mb-6">ENTRAR</button>
+        <p class="text-center text-sm text-gray-500">Novo aqui? <span onclick="go('registerScreen')" class="text-blue-500 font-bold cursor-pointer">Crie sua conta</span></p>
+    </div>
+
+    <div id="registerScreen" class="screen justify-center p-8">
+        <h1 class="text-4xl font-black text-center mb-8">Cadastro</h1>
+        <input type="text" id="regUser" placeholder="Escolha um Username" class="auth-input">
+        <input type="email" id="regGmail" placeholder="Seu Gmail" class="auth-input">
+        <input type="password" id="regPass" placeholder="Crie uma Senha" class="auth-input">
+        <button id="btnCriar" class="btn-blue mb-4">PRÓXIMO PASSO</button>
+        <p onclick="go('loginScreen')" class="text-center text-gray-500 cursor-pointer">Já tenho conta</p>
+    </div>
+
+    <div id="setupScreen" class="screen justify-center p-8">
+        <h2 class="text-2xl font-bold text-center mb-6">Configure seu Perfil</h2>
+        <div class="flex flex-col items-center mb-6">
+            <img id="setupPreview" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-32 h-32 rounded-full object-cover border-4 border-blue-600 mb-4">
+            <label class="bg-zinc-800 px-4 py-2 rounded-lg cursor-pointer text-sm font-bold">
+                Escolher Foto
+                <input type="file" id="setupFile" accept="image/*" class="hidden">
+            </label>
+        </div>
+        <input type="text" id="setupBio" placeholder="Sua Bio (Ex: Amante de fotos)" class="auth-input">
+        <button id="btnFinalizarSetup" class="btn-blue">FINALIZAR E ENTRAR</button>
+    </div>
+
+    <div id="feedScreen" class="screen">
+        <header class="p-4 border-b border-gray-800 flex justify-between items-center sticky top-0 bg-black z-50">
+            <span class="text-2xl font-black italic text-blue-600">FhotosTube</span>
+        </header>
+        <div id="feedList" class="flex-1 overflow-y-auto pb-20"></div>
+    </div>
+
+    <div id="profileScreen" class="screen">
+        <div class="p-6 border-b border-gray-900">
+            <div class="flex items-center gap-6 mb-4">
+                <img id="pPic" src="" class="w-24 h-24 rounded-full object-cover border-2 border-blue-600">
+                <div>
+                    <h2 id="pNick" class="text-2xl font-bold"></h2>
+                    <p id="pBio" class="text-gray-400 text-sm italic"></p>
+                </div>
+            </div>
+            <div id="pActions" class="flex gap-2"></div>
+        </div>
+        <div id="pGrid" class="grid-posts"></div>
+    </div>
+
+    <div id="postScreen" class="screen p-8 justify-center">
+        <h2 class="text-2xl font-bold mb-4">Novo Post</h2>
+        <input type="file" id="fileIn" accept="image/*,video/*" class="mb-4">
+        <textarea id="postCap" placeholder="Legenda do seu post..." class="auth-input h-24"></textarea>
+        <button id="btnPostar" class="btn-blue">PUBLICAR</button>
+    </div>
+
+    <nav id="navBar" class="hidden">
+        <i class="fa-solid fa-house text-xl" onclick="go('feedScreen')"></i>
+        <i class="fa-solid fa-square-plus text-2xl" onclick="go('postScreen')"></i>
+        <i class="fa-solid fa-user text-xl" id="btnMyProfile"></i>
+    </nav>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, push, onValue, get, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAMHAKVot044psR421B_t-Ht5EmsueVS8A",
+        authDomain: "game-dev-space.firebaseapp.com",
+        databaseURL: "https://game-dev-space-default-rtdb.firebaseio.com",
+        projectId: "game-dev-space",
+        storageBucket: "game-dev-space.firebasestorage.app",
+        appId: "1:1073185335190:web:ae9ffd88cdf89f53cbdfb7"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    let user = JSON.parse(localStorage.getItem('ft_user')) || null;
+
+    window.go = (id) => {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        const nav = document.getElementById('navBar');
+        if(['loginScreen', 'registerScreen', 'setupScreen'].includes(id)) nav.classList.add('hidden');
+        else nav.classList.remove('hidden');
+    };
+
+    // CADASTRO
+    document.getElementById('btnCriar').onclick = async () => {
+        const u = document.getElementById('regUser').value.trim().toLowerCase();
+        const p = document.getElementById('regPass').value;
+        if(!u || !p) return alert("Preencha os campos!");
+        const snap = await get(ref(db, 'users_v4/' + u));
+        if(snap.exists()) return alert("Username já existe!");
+        
+        user = { nick: u, pass: p, pic: "https://cdn-icons-png.flaticon.com/512/149/149071.png", bio: "" };
+        go('setupScreen');
+    };
+
+    // SETUP PERFIL
+    document.getElementById('setupFile').onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            document.getElementById('setupPreview').src = ev.target.result;
+            user.pic = ev.target.result;
+        }
+        reader.readAsDataURL(e.target.files[0]);
+    };
+
+    document.getElementById('btnFinalizarSetup').onclick = async () => {
+        user.bio = document.getElementById('setupBio').value;
+        await set(ref(db, 'users_v4/' + user.nick), user);
+        localStorage.setItem('ft_user', JSON.stringify(user));
+        go('feedScreen');
+    };
+
+    // LOGIN
+    document.getElementById('btnEntrar').onclick = async () => {
+        const u = document.getElementById('logUser').value.trim().toLowerCase();
+        const p = document.getElementById('logPass').value;
+        const snap = await get(ref(db, 'users_v4/' + u));
+        if(snap.exists() && snap.val().pass === p) {
+            user = snap.val();
+            localStorage.setItem('ft_user', JSON.stringify(user));
+            go('feedScreen');
+        } else alert("Erro!");
+    };
+
+    // POSTAR
+    document.getElementById('btnPostar').onclick = () => {
+        const file = document.getElementById('fileIn').files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const type = file.type.startsWith('video') ? 'video' : 'image';
+            push(ref(db, 'posts_v4'), {
+                author: user.nick,
+                pic: user.pic,
+                content: e.target.result,
+                type: type,
+                caption: document.getElementById('postCap').value,
+                time: Date.now()
+            });
+            go('feedScreen');
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // FEED
+    onValue(ref(db, 'posts_v4'), (snap) => {
+        const feed = document.getElementById('feedList');
+        feed.innerHTML = "";
+        const data = snap.val();
+        if(!data) return;
+        Object.keys(data).reverse().forEach(id => {
+            const p = data[id];
+            const media = p.type === 'video' ? `<video src="${p.content}" controls class="w-full"></video>` : `<img src="${p.content}" class="w-full">`;
+            feed.innerHTML += `<div class="mb-6 border-b border-gray-900 pb-2">
+                <div class="flex items-center gap-2 p-3 cursor-pointer" onclick="openProfile('${p.author}')">
+                    <img src="${p.pic}" class="w-8 h-8 rounded-full object-cover">
+                    <span class="font-bold">${p.author}</span>
+                </div>
+                ${media}
+                <div class="p-3"><p class="text-sm"><b>${p.author}</b> ${p.caption}</p></div>
+            </div>`;
+        });
+    });
+
+    window.openProfile = async (nick) => {
+        const snap = await get(ref(db, 'users_v4/' + nick));
+        const u = snap.val();
+        document.getElementById('pNick').innerText = u.nick;
+        document.getElementById('pPic').src = u.pic;
+        document.getElementById('pBio').innerText = u.bio || "";
+        
+        const grid = document.getElementById('pGrid');
+        grid.innerHTML = "";
+        const pSnap = await get(ref(db, 'posts_v4'));
+        if(pSnap.exists()){
+            Object.values(pSnap.val()).forEach(p => {
+                if(p.author === nick){
+                    const m = p.type === 'video' ? `<video src="${p.content}"></video>` : `<img src="${p.content}">`;
+                    grid.innerHTML += `<div class="grid-item">${m}</div>`;
+                }
+            });
+        }
+        go('profileScreen');
+    };
+
+    document.getElementById('btnMyProfile').onclick = () => openProfile(user.nick);
+    if(user) go('feedScreen');
+</script>
+</body>
+</html>
